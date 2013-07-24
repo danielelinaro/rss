@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "global.h"
+#include "add.h"
 #include "init.h"
 
 #define prefixcmp(a,b) strncmp(a,b,strlen(b))
-#define NONE 0
 
 struct cmd_struct {
 	char *cmd;
@@ -16,13 +18,14 @@ static int handle_internal_command(int argc, char **argv) {
         int i;
         char *cmd = argv[0];
         static struct cmd_struct commands[] = {
+                {"add", cmd_add, NONE},
                 {"init", cmd_init, NONE},
                 {NULL, NULL, NONE}
         };
         i = 0;
         while (commands[i].cmd) {
                 if (strncmp(cmd,commands[i].cmd,strlen(commands[i].cmd)) == 0)
-                        return commands[i].fn(argc-1, argv+1);
+                        return commands[i].fn(argc, argv);
                 i++;
         }
         fprintf(stderr, "fatal: %s: unknown command.\n", cmd);
