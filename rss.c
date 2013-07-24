@@ -4,6 +4,7 @@
 
 #include "global.h"
 #include "add.h"
+#include "fetch.h"
 #include "init.h"
 #include "list.h"
 
@@ -20,6 +21,7 @@ static int handle_internal_command(int argc, char **argv) {
         char *cmd = argv[0];
         static struct cmd_struct commands[] = {
                 {"add", cmd_add, NONE},
+                {"fetch", cmd_fetch, NONE},
                 {"init", cmd_init, NONE},
                 {"list", cmd_list, NONE},
                 {NULL, NULL, NONE}
