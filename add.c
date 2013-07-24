@@ -56,7 +56,8 @@ static int parse_args(int argc, char **argv) {
 
 int cmd_add(int argc, char **argv) {
         struct stat buf;
-        char urls[PATH_MAX], aliases[PATH_MAX];
+        int i;
+        char urls[PATH_MAX], aliases[PATH_MAX], path[PATH_MAX];
 
         if (stat(RSS_DIR, &buf) == -1) {
                 if (errno == ENOENT)
@@ -83,6 +84,16 @@ int cmd_add(int argc, char **argv) {
                 return -1;
         }
 
-        return ! (!append_to_file(urls,feed_url) && !append_to_file(aliases,feed_alias));
+        for (i=0; i<strlen(feed_alias); i++)
+                if (feed_alias[i] == '/' || feed_alias[i] == ':' || feed_alias[i] == '.')
+                        feed_alias[i] = '_';
+
+        append_to_file(urls,feed_url);
+        append_to_file(aliases,feed_alias);
+
+        sprintf(path, "%s/%s", RSS_DIR, feed_alias);
+        mkdir(path, 0755);
+
+        return 0;
 }
 

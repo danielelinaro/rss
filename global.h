@@ -10,6 +10,7 @@
 #ifndef PATH_MAX
 #define PATH_MAX            4096
 #endif
+#define URL_MAX             4096
 
 #define MIN(a,b) ((a)<(b) ? (a) : (b))
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
@@ -25,6 +26,7 @@ ssize_t getline(char **lineptr, size_t *n, FILE *stream);
 int append_to_file(const char *filename, const char *text);
 int check_in_file(const char *filename, const char *text);
 int check_feeds_integrity(void);
+int find_feed_url(const char *feed, char *url, char *alias);
 
 #endif
 

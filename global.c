@@ -29,10 +29,12 @@ int check_in_file(const char *filename, const char *text) {
         }
         while ((read = getline(&line, &len, fid)) != -1) {
                 lineno++;
-                if (line[0] == '#')
+                if (strlen(line) || line[0] == '#')
                         continue;
+                while (line[read] != '\n')
+                        read--;
                 line[read] = '\0';
-                if (strncmp(line, text, MAX(strlen(line),text_len)) == 0)
+                if (strcmp(line, text) == 0)
                         break;
         }
         fclose(fid);
@@ -71,6 +73,80 @@ int check_feeds_integrity(void) {
         if (line)
                 free(line);
         return lineno;
+}
+
+static int find_line(const char *filename, const char *text) {
+        FILE *fid;
+        char *line = NULL;
+        int lineno = 1;
+        ssize_t read;
+        size_t len, text_len = strlen(text);
+        fid = fopen(filename,"r");
+        if (fid == NULL)
+                return -1;
+        while ((read = getline(&line, &len, fid)) != -1) {
+                if (!strlen(line) || line[0] == '#')
+                        continue;
+                while (line[read] != '\n')
+                        read--;
+                line[read] = '\0';
+                if (strlen(line) == text_len && strcmp(line, text) == 0)
+                        break;
+                lineno++;
+        }
+        if (line)
+                free(line);
+        fclose(fid);
+        return (read == -1 ? -1 : lineno);
+}
+
+static int extract_line(const char *filename, int lineno, char *text) {
+        FILE *fid;
+        char *line = NULL;
+        int curr = 1;
+        ssize_t read;
+        size_t len;
+        fid = fopen(filename,"r");
+        if (fid == NULL)
+                return -1;
+        while ((read = getline(&line, &len, fid)) != -1) {
+                if (!strlen(line) || line[0] == '#')
+                        continue;
+                while (line[read] != '\n')
+                        read--;
+                line[read] = '\0';
+                if (curr == lineno) {
+                        strcpy(text, line);
+                        break;
+                }
+                curr++;
+        }
+        if (line)
+                free(line);
+        fclose(fid);
+        return (read == -1 ? -1 : 0);
+}
+
+int find_feed_url(const char *feed, char *url, char *alias) {
+        int lineno;
+        char path[PATH_MAX];
+        sprintf(path, "%s/%s", RSS_DIR, FEEDS_ALIASES_FILE);
+        lineno = find_line(path, feed);
+        sprintf(path, "%s/%s", RSS_DIR, FEEDS_FILE);
+        if (lineno > 0) {
+                if (extract_line(path, lineno, url) != 0) {
+                        fprintf(stderr, "unable to extract line %d from file %s.\n", lineno, path);
+                        return -1;
+                }
+                strcpy(alias, feed);
+                return 0;
+        }
+        if (find_line(path, feed) > 0) {
+                strcpy(url, feed);
+                return 0;
+        }
+        fprintf(stderr, "Unable to find feed %s\n", feed);
+        return -1;
 }
 
 #ifdef MY_GETLINE
