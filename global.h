@@ -24,6 +24,7 @@ ssize_t getline(char **lineptr, size_t *n, FILE *stream);
 
 int append_to_file(const char *filename, const char *text);
 int check_in_file(const char *filename, const char *text);
+int check_feeds_integrity(void);
 
 #endif
 

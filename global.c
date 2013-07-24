@@ -41,6 +41,38 @@ int check_in_file(const char *filename, const char *text) {
         return (read == -1 ? 0 : lineno);
 }
 
+int check_feeds_integrity(void) {
+        FILE *fid;
+        char *line, path[PATH_MAX];
+        ssize_t read;
+        size_t len, lineno = 0;
+        sprintf(path, "%s/%s", RSS_DIR, FEEDS_FILE);
+        fid = fopen(path, "r");
+        if (fid == NULL) {
+                fprintf(stderr, "fatal: unable to open %s\n", FEEDS_FILE);
+                return -1;
+        }
+        while ((read = getline(&line, &len, fid)) != -1)
+                if (strlen(line) && line[0] != '#')
+                        lineno++;
+        fclose(fid);
+        sprintf(path, "%s/%s", RSS_DIR, FEEDS_ALIASES_FILE);
+        fid = fopen(path, "r");
+        if (fid == NULL) {
+                fprintf(stderr, "fatal: unable to open %s\n", FEEDS_ALIASES_FILE);
+                if (line)
+                        free(line);
+                return -1;
+        }
+        while ((read = getline(&line, &len, fid)) != -1)
+                if (strlen(line) && line[0] != '#')
+                        lineno--;
+        fclose(fid);
+        if (line)
+                free(line);
+        return lineno;
+}
+
 #ifdef MY_GETLINE
 ssize_t getline(char **linep, size_t *np, FILE *stream)
 {

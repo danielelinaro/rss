@@ -24,12 +24,12 @@ const char rss_add_usage_string[] =
         "   -a, --alias     provide an alias for the address of the feed\n";
 
 
-void usage() {
+static void usage() {
         printf("%s\n", rss_add_usage_string);
 }
 
-int parse_args(int argc, char **argv) {
-        int ch, i;
+static int parse_args(int argc, char **argv) {
+        int ch;
         feed_alias[0] = '\0';
         while ((ch = getopt_long(argc, argv, "ha:", longopts, NULL)) != -1) {
                 switch (ch) {

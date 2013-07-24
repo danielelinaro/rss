@@ -5,6 +5,7 @@
 #include "global.h"
 #include "add.h"
 #include "init.h"
+#include "list.h"
 
 #define prefixcmp(a,b) strncmp(a,b,strlen(b))
 
@@ -20,6 +21,7 @@ static int handle_internal_command(int argc, char **argv) {
         static struct cmd_struct commands[] = {
                 {"add", cmd_add, NONE},
                 {"init", cmd_init, NONE},
+                {"list", cmd_list, NONE},
                 {NULL, NULL, NONE}
         };
         i = 0;
