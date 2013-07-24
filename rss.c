@@ -7,6 +7,7 @@
 #include "fetch.h"
 #include "init.h"
 #include "list.h"
+#include "remove.h"
 
 #define prefixcmp(a,b) strncmp(a,b,strlen(b))
 
@@ -24,6 +25,7 @@ static int handle_internal_command(int argc, char **argv) {
                 {"fetch", cmd_fetch, NONE},
                 {"init", cmd_init, NONE},
                 {"list", cmd_list, NONE},
+                {"remove", cmd_remove, NONE},
                 {NULL, NULL, NONE}
         };
         i = 0;

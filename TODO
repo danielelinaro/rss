@@ -1,3 +1,1 @@
--) complete cmd_fetch
--) write cmd_remove
 -) write cmd_show

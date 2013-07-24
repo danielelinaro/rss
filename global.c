@@ -135,17 +135,22 @@ int find_feed_url(const char *feed, char *url, char *alias) {
         sprintf(path, "%s/%s", RSS_DIR, FEEDS_FILE);
         if (lineno > 0) {
                 if (extract_line(path, lineno, url) != 0) {
-                        fprintf(stderr, "unable to extract line %d from file %s.\n", lineno, path);
+                        fprintf(stderr, "error: unable to extract line %d from file %s.\n", lineno, path);
                         return -1;
                 }
                 strcpy(alias, feed);
-                return 0;
+                return lineno;
         }
-        if (find_line(path, feed) > 0) {
+        lineno = find_line(path, feed);
+        if (lineno > 0) {
+                if (extract_line(path, lineno, alias) != 0) {
+                        fprintf(stderr, "error: unable to extract line %d from file %s.\n", lineno, path);
+                        return -1;
+                }
                 strcpy(url, feed);
-                return 0;
+                return lineno;
         }
-        fprintf(stderr, "Unable to find feed %s\n", feed);
+        fprintf(stderr, "error: unable to find feed %s\n", feed);
         return -1;
 }
 

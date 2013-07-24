@@ -115,7 +115,7 @@ int cmd_fetch(int argc, char **argv) {
                 fclose(fid);
         }
         else {
-                if (find_feed_url(feed, url, alias) != 0) {
+                if (find_feed_url(feed, url, alias) < 0) {
                         fprintf(stderr, "fatal: cannot find feed %s\n", feed);
                         return -1;
                 }
