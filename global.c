@@ -32,7 +32,7 @@ int check_in_file(const char *filename, const char *text) {
                 if (line[0] == '#')
                         continue;
                 line[read] = '\0';
-                if (strncmp(line, text, MIN(strlen(line),text_len)) == 0)
+                if (strncmp(line, text, MAX(strlen(line),text_len)) == 0)
                         break;
         }
         fclose(fid);
