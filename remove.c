@@ -58,6 +58,10 @@ static int parse_args(int argc, char **argv, int *options) {
                         return -1;
                 }
         }
+        if (optind == argc) {
+                fprintf(stderr, "You must provide the alias or the URL of at least one feed to remove.\n");
+                return -1;
+        }
         return 0;
 }
 
