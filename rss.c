@@ -1,37 +1,44 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "global.h"
 #include "add.h"
 #include "fetch.h"
+#include "help.h"
 #include "init.h"
 #include "list.h"
 #include "remove.h"
 
-#define prefixcmp(a,b) strncmp(a,b,strlen(b))
-
-struct cmd_struct {
-	char *cmd;
-	int (*fn)(int, char **);
-	int option;
+struct cmd_struct rss_commands[] = {
+        {"add", cmd_add, NEED_RSS_DIR},
+        {"fetch", cmd_fetch, NEED_RSS_DIR},
+        {"help", cmd_help, NONE},
+        {"init", cmd_init, NONE},
+        {"list", cmd_list, NEED_RSS_DIR},
+        {"remove", cmd_remove, NEED_RSS_DIR},
+        {NULL, NULL, NONE}
 };
 
 static int handle_internal_command(int argc, char **argv) {
         int i;
         char *cmd = argv[0];
-        static struct cmd_struct commands[] = {
-                {"add", cmd_add, NONE},
-                {"fetch", cmd_fetch, NONE},
-                {"init", cmd_init, NONE},
-                {"list", cmd_list, NONE},
-                {"remove", cmd_remove, NONE},
-                {NULL, NULL, NONE}
-        };
+        struct stat buf;
         i = 0;
-        while (commands[i].cmd) {
-                if (strncmp(cmd,commands[i].cmd,strlen(commands[i].cmd)) == 0)
-                        return commands[i].fn(argc, argv);
+        while (rss_commands[i].cmd) {
+                if (strcmp(cmd,rss_commands[i].cmd) == 0) {
+                        if (rss_commands[i].option & NEED_RSS_DIR && stat(RSS_DIR, &buf) == -1) {
+                                if (errno == ENOENT)
+                                        fprintf(stderr, "fatal: %s: no such directory.\n"
+                                                        "did you initialise this directory with 'rss init'?\n", RSS_DIR);
+                                else
+                                        perror("fatal:");
+                                return -1;
+
+                        }
+                        return rss_commands[i].fn(argc, argv);
+                }
                 i++;
         }
         fprintf(stderr, "fatal: %s: unknown command.\n", cmd);

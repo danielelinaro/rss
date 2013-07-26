@@ -16,7 +16,7 @@ const char rss_list_usage_string[] =
         "   -h, --help      print this help message and exit\n";
 
 
-static void usage() {
+static void usage(void) {
         printf("%s\n", rss_list_usage_string);
 }
 
@@ -26,7 +26,7 @@ static int parse_args(int argc, char **argv) {
                 switch (ch) {
                 case 'h':
                         usage();
-                        return -1;
+                        exit(0);
                 default:
                         fprintf(stderr, "fatal: %c: unknown option.\n", ch);
                         return -1;

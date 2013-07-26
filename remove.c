@@ -27,7 +27,7 @@ const char rss_remove_usage_string[] =
         "   -c, --confirm   request confirmation before removing a non-empty directory\n";
 
 
-static void usage() {
+static void usage(void) {
         printf("%s\n", rss_remove_usage_string);
 }
 
@@ -52,7 +52,7 @@ static int parse_args(int argc, char **argv, int *options) {
                         break;
                 case 'h':
                         usage();
-                        return -1;
+                        exit(0);
                 default:
                         fprintf(stderr, "fatal: %c: unknown option.\n", ch);
                         return -1;

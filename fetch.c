@@ -19,10 +19,10 @@ const char rss_fetch_usage_string[] =
         "   -a, --all       fetch all feeds\n";
 
 
-char feed[1024];
+char feed[URL_MAX];
 int fetch_all;
 
-static void usage() {
+static void usage(void) {
         printf("%s\n", rss_fetch_usage_string);
 }
 
@@ -37,7 +37,7 @@ static int parse_args(int argc, char **argv) {
                         break;
                 case 'h':
                         usage();
-                        return -1;
+                        exit(0);
                 default:
                         fprintf(stderr, "fatal: %c: unknown option.\n", ch);
                         return -1;
@@ -53,13 +53,13 @@ static int parse_args(int argc, char **argv) {
                         return -1;
                 }
                 else {
-                        strncpy(feed,argv[optind],1024);
+                        strcpy(feed,argv[optind]);
                 }
         }
         return 0;
 }
 
-static int fetch_url(const char *url, const char *filename) {
+int fetch_url(const char *url, const char *filename) {
         int retval = 0;
         FILE *fid;
         CURL *curl;
@@ -69,6 +69,7 @@ static int fetch_url(const char *url, const char *filename) {
                 fprintf(stderr, "fatal: unable to open %s for writing.\n", filename);
                 return -1;
         }
+        printf("Fetching %s to %s.\n", url, filename);
         curl = curl_easy_init();
         if (!curl) {
                 fprintf(stderr, "fatal: unable to initialise libcurl.\n");

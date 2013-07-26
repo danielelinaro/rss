@@ -1,1 +1,4 @@
+-) fix the -f option in add
+-) add options in init
+-) list should display a different message when there are no feeds in the database
 -) write cmd_show

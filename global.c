@@ -3,6 +3,23 @@
 
 #include "global.h"
 
+int prefixcmp(const char *str, const char *prefix) {
+        for (; ; str++, prefix++)
+                if (!*prefix)
+                        return 0;
+                else if (*str != *prefix)
+                        return (unsigned char)*prefix - (unsigned char)*str;
+}
+
+int suffixcmp(const char *str, const char *suffix)
+{
+        int len = strlen(str), suflen = strlen(suffix);
+        if (len < suflen)
+                return -1;
+        else
+                return strcmp(str + len - suflen, suffix);
+}
+
 int append_to_file(const char *filename, const char *text) {
         FILE *fid;
         fid = fopen(filename,"a");
@@ -73,6 +90,36 @@ int check_feeds_integrity(void) {
         if (line)
                 free(line);
         return lineno;
+}
+
+int url_to_alias(const char *url, char *alias) {
+        char *input, *ptr;
+        char **ap, *argv[100];
+        int argc;
+        input = malloc(URL_MAX * sizeof(char));
+        strcpy(input, url);
+
+        for (ap = argv, argc=0; (*ap = strsep(&input, ".")) != NULL; argc++)
+                if (**ap != '\0')
+                        if (++ap >= &argv[100])
+                                break;
+        
+        if (!suffixcmp(argv[0],"www")) {
+                strcpy(alias, argv[1]);
+        }
+        else {
+                for (ptr=argv[0]; ptr!=argv[1]; ptr++) {
+                        if (*ptr == '/') {
+                                ptr += 2;
+                                break;
+                        }
+                }
+                if (ptr==argv[1])
+                        ptr = argv[0];
+                strcpy(alias, ptr);
+        }
+        free(input);
+        return 0;
 }
 
 static int find_line(const char *filename, const char *text) {
