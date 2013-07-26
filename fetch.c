@@ -102,9 +102,7 @@ int cmd_fetch(int argc, char **argv) {
                 fid = fopen(path,"r");
                 while ((read = getline(&line, &len, fid)) != -1) {
                         if (strlen(line) && line[0] != '#') {
-                                while (line[read] != '\n')
-                                        read--;
-                                line[read] = '\0';
+                                trim_newline(line);
                                 find_feed_url(line, url, alias);
                                 sprintf(path, "%s/%s/feed.xml", RSS_DIR, alias);
                                 printf("Fetching %s to %s.\n", url, path);

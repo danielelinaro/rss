@@ -31,6 +31,7 @@ struct cmd_struct {
 	int option;
 };
 
+void trim_newline(char *str);
 int prefixcmp(const char *str, const char *prefix);
 int suffixcmp(const char *str, const char *suffix);
 int append_to_file(const char *filename, const char *text);

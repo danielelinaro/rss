@@ -40,7 +40,7 @@ int cmd_list(int argc, char **argv) {
         char path[PATH_MAX], *feeds_line, *aliases_line;
         size_t len[2] = {0,0};
         ssize_t read[2] = {0,0};
-        int retval = 0;
+        int retval = 0, first = 1;
 
         if (parse_args(argc,argv))
                 return -1;
@@ -64,15 +64,18 @@ int cmd_list(int argc, char **argv) {
                 return -1;
         }
 
-        printf("The following feeds are currently in the database:\n");
         while ((read[0] = getline(&feeds_line, &len[0], feeds_fid)) != -1) {
                 if (strlen(feeds_line) == 0 || feeds_line[0] == '#')
                         continue;
+                trim_newline(feeds_line);
                 while ((read[1] = getline(&aliases_line, &len[1], aliases_fid)) != -1)
                         if (strlen(aliases_line) != 0 && aliases_line[0] != '#')
                                 break;
-                feeds_line[read[0]] = '\0';
-                aliases_line[read[1]] = '\0';
+                trim_newline(aliases_line);
+                if (first) {
+                        printf("The following feeds are currently in the database:\n");
+                        first = 0;
+                }
                 printf("%s - %s\n", aliases_line, feeds_line);
         }
  
@@ -82,6 +85,10 @@ int cmd_list(int argc, char **argv) {
                 free(aliases_line);
         fclose(feeds_fid);
         fclose(aliases_fid);
+
+        if (first)
+                printf("There are no feeds in the database.\n");
+
         return retval;
 }
 

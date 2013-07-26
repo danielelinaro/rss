@@ -33,9 +33,10 @@ static void usage(void) {
 
 static int parse_args(int argc, char **argv, int *options) {
         int ch;
-        char answer;
+        char answer, *ptr;
         feed_alias[0] = '\0';
-        options = 0x0;
+        ptr = feed_alias;
+        *options = 0x0;
         while ((ch = getopt_long(argc, argv, "ha:f", longopts, NULL)) != -1) {
                 switch (ch) {
                 case 'a':
@@ -63,7 +64,7 @@ static int parse_args(int argc, char **argv, int *options) {
                 scanf("%c", &answer);
                 if (answer == 'n' || answer == 'N') {
                         printf("Enter the name of the alias: ");
-                        scanf("%s", &feed_alias);
+                        scanf("%s", ptr);
                 }
         }
         return 0;
@@ -79,12 +80,12 @@ int cmd_add(int argc, char **argv) {
         sprintf(urls, "%s/%s", RSS_DIR, FEEDS_FILE);
         sprintf(aliases, "%s/%s", RSS_DIR, FEEDS_ALIASES_FILE);
 
-        if (check_in_file(urls,feed_url) == 0) {
+        if (check_in_file(urls,feed_url) > 0) {
                 fprintf(stderr, "fatal: URL %s already present.\n", feed_url);
                 return -1;
         }
 
-        if (check_in_file(aliases,feed_alias) == 0) {
+        if (check_in_file(aliases,feed_alias) > 0) {
                 fprintf(stderr, "fatal: alias %s already present.\n", feed_alias);
                 return -1;
         }
@@ -99,8 +100,10 @@ int cmd_add(int argc, char **argv) {
         sprintf(path, "%s/%s", RSS_DIR, feed_alias);
         mkdir(path, 0755);
 
-        if (options & RSS_ADD_FETCH)
+        if (options & RSS_ADD_FETCH) {
+                sprintf(path, "%s/%s/feed.xml", RSS_DIR, feed_alias);
                 fetch_url(feed_url, path);
+        }
 
         return 0;
 }

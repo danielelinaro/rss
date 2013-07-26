@@ -46,11 +46,9 @@ int check_in_file(const char *filename, const char *text) {
         }
         while ((read = getline(&line, &len, fid)) != -1) {
                 lineno++;
-                if (strlen(line) || line[0] == '#')
+                if (strlen(line) && line[0] == '#')
                         continue;
-                while (line[read] != '\n')
-                        read--;
-                line[read] = '\0';
+                trim_newline(line);
                 if (strcmp(line, text) == 0)
                         break;
         }
@@ -122,6 +120,14 @@ int url_to_alias(const char *url, char *alias) {
         return 0;
 }
 
+void trim_newline(char *str) {
+        int pos = strlen(str) - 1;
+        while (pos >= 0 && str[pos--] != '\n')
+                ;
+        if (pos)
+                str[pos+1] = '\0';
+}
+
 static int find_line(const char *filename, const char *text) {
         FILE *fid;
         char *line = NULL;
@@ -134,9 +140,7 @@ static int find_line(const char *filename, const char *text) {
         while ((read = getline(&line, &len, fid)) != -1) {
                 if (!strlen(line) || line[0] == '#')
                         continue;
-                while (line[read] != '\n')
-                        read--;
-                line[read] = '\0';
+                trim_newline(line);
                 if (strlen(line) == text_len && strcmp(line, text) == 0)
                         break;
                 lineno++;
@@ -159,9 +163,7 @@ static int extract_line(const char *filename, int lineno, char *text) {
         while ((read = getline(&line, &len, fid)) != -1) {
                 if (!strlen(line) || line[0] == '#')
                         continue;
-                while (line[read] != '\n')
-                        read--;
-                line[read] = '\0';
+                trim_newline(line);
                 if (curr == lineno) {
                         strcpy(text, line);
                         break;
