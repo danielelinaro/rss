@@ -4,6 +4,7 @@
 
 #include "fetch.h"
 #include "global.h"
+#include "parse.h"
 
 static struct option longopts[] = {
         {"help", no_argument, NULL, 'h'},
@@ -94,6 +95,7 @@ int cmd_fetch(int argc, char **argv) {
         ssize_t read;
         size_t len;
         char url[URL_MAX], alias[PATH_MAX], path[PATH_MAX], *line;
+        int err;
  
         parse_args(argc, argv);
 
@@ -106,7 +108,19 @@ int cmd_fetch(int argc, char **argv) {
                                 find_feed_url(line, url, alias);
                                 sprintf(path, "%s/%s/feed.xml", RSS_DIR, alias);
                                 printf("Fetching %s to %s.\n", url, path);
-                                fetch_url(url, path);
+                                err = fetch_url(url, path);
+                                if (err) {
+                                        fprintf(stderr, "Unable to fetch %s\n", alias);
+                                }
+                                else {
+                                        printf("Successfully fetched %s\n", alias);
+                                        err = parse_xml(path);
+                                        if (err)
+                                                fprintf(stderr, "Unable to parse %s\n", path);
+                                        else
+                                                printf("Successfully parsed %s\n", path);
+                                }
+
                         }
                 }
                 if (line)
@@ -120,7 +134,22 @@ int cmd_fetch(int argc, char **argv) {
                 }
                 sprintf(path, "%s/%s/feed.xml", RSS_DIR, alias);
                 printf("Fetching %s to %s.\n", url, path);
-                fetch_url(url, path);
+                err = fetch_url(url, path);
+                if (err) {
+                        fprintf(stderr, "Unable to fetch %s\n", alias);
+                        return -1;
+                }
+                else {
+                        printf("Successfully fetched %s\n", alias);
+                        err = parse_xml(path);
+                        if (err) {
+                                fprintf(stderr, "Unable to parse %s\n", path);
+                                return -1;
+                        }
+                        else {
+                                printf("Successfully parsed %s\n", path);
+                        }
+                }
         }
 
         return 0;
