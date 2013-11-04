@@ -51,10 +51,15 @@ int main(int argc, char **argv) {
         char *cmd;
         cmd = argv[0];
 
+        //test_global();
+
         if (!prefixcmp(cmd,"rss-")) {
                 cmd += 4;
                 argv[0] = cmd;
                 err = handle_internal_command(argc, argv);
+        }
+        else if (argc == 1) {
+                err = cmd_help(0, NULL);
         }
         else {
                 err = handle_internal_command(argc-1, argv+1);

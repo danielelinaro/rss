@@ -103,9 +103,8 @@ int cmd_fetch(int argc, char **argv) {
                 sprintf(path, "%s/%s", RSS_DIR, FEEDS_ALIASES_FILE);
                 fid = fopen(path,"r");
                 while ((read = getline(&line, &len, fid)) != -1) {
-                        if (strlen(line) && line[0] != '#') {
-                                trim_newline(line);
-                                find_feed_url(line, url, alias);
+                        split_feeds_line(line, alias, url);
+                        if (alias[0] && url[0]) {
                                 sprintf(path, "%s/%s/feed.xml", RSS_DIR, alias);
                                 printf("Fetching %s to %s.\n", url, path);
                                 err = fetch_url(url, path);
@@ -128,9 +127,20 @@ int cmd_fetch(int argc, char **argv) {
                 fclose(fid);
         }
         else {
-                if (find_feed_url(feed, url, alias) < 0) {
-                        fprintf(stderr, "fatal: cannot find feed %s\n", feed);
-                        return -1;
+                if (find_feed_url(feed, url)) {
+                        // the user passed the alias
+                        strcpy(alias, feed);
+                }
+                else {
+                        if (find_feed_alias(feed, alias) > 0) {
+                                // the user passed the url
+                                strcpy(url, feed);
+                        }
+                        else {
+                                // can't find the feed
+                                fprintf(stderr, "fatal: cannot find feed %s\n", feed);
+                                return -1;
+                        }
                 }
                 sprintf(path, "%s/%s/feed.xml", RSS_DIR, alias);
                 printf("Fetching %s to %s.\n", url, path);

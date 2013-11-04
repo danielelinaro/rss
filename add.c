@@ -8,8 +8,8 @@
 #include "fetch.h"
 #include "global.h"
 
-char feed_url[1024];
-char feed_alias[1024];
+char feed_url[URL_MAX];
+char feed_alias[URL_MAX];
 
 static struct option longopts[] = {
         {"help", no_argument, NULL, 'h'},
@@ -71,31 +71,16 @@ static int parse_args(int argc, char **argv, int *options) {
 }
 
 int cmd_add(int argc, char **argv) {
-        int options, i;
-        char urls[PATH_MAX], aliases[PATH_MAX], path[PATH_MAX];
+        int options;
+        char path[PATH_MAX];
 
         if (parse_args(argc, argv, &options) != 0)
                 return -1;
 
-        sprintf(urls, "%s/%s", RSS_DIR, FEEDS_FILE);
-        sprintf(aliases, "%s/%s", RSS_DIR, FEEDS_ALIASES_FILE);
-
-        if (check_in_file(urls,feed_url) > 0) {
-                fprintf(stderr, "fatal: URL %s already present.\n", feed_url);
+        if (add_feed(feed_url, feed_alias) != 0) {
+                fprintf(stderr, "Unable to add the feed to the database.\n");
                 return -1;
         }
-
-        if (check_in_file(aliases,feed_alias) > 0) {
-                fprintf(stderr, "fatal: alias %s already present.\n", feed_alias);
-                return -1;
-        }
-
-        for (i=0; i<strlen(feed_alias); i++)
-                if (feed_alias[i] == '/' || feed_alias[i] == ':' || feed_alias[i] == '.')
-                        feed_alias[i] = '_';
-
-        append_to_file(urls,feed_url);
-        append_to_file(aliases,feed_alias);
 
         sprintf(path, "%s/%s", RSS_DIR, feed_alias);
         mkdir(path, 0755);

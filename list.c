@@ -36,55 +36,43 @@ static int parse_args(int argc, char **argv) {
 }
 
 int cmd_list(int argc, char **argv) {
-        FILE *feeds_fid, *aliases_fid;
-        char path[PATH_MAX], *feeds_line, *aliases_line;
-        size_t len[2] = {0,0};
-        ssize_t read[2] = {0,0};
+        FILE *fid;
+        char path[PATH_MAX], url[URL_MAX], alias[URL_MAX], *line = NULL;
+        size_t len;
+        ssize_t read;
         int retval = 0, first = 1;
 
         if (parse_args(argc,argv))
                 return -1;
 
+        /*
         if (check_feeds_integrity() != 0) {
                 fprintf(stderr, "fatal: the feeds file is corrupted.\n");
                 return -1;
         }
+        */
 
         sprintf(path, "%s/%s", RSS_DIR, FEEDS_FILE);
-        feeds_fid = fopen(path,"r");
-        if (feeds_fid == NULL) {
+        fid = fopen(path,"r");
+        if (fid == NULL) {
                 fprintf(stderr, "fatal: unable to read %s.\n", FEEDS_FILE);
                 return -1;
         }
-        sprintf(path, "%s/%s", RSS_DIR, FEEDS_ALIASES_FILE);
-        aliases_fid = fopen(path,"r");
-        if (aliases_fid == NULL) {
-                fprintf(stderr, "fatal: unable to read %s.\n", FEEDS_ALIASES_FILE);
-                fclose(feeds_fid);
-                return -1;
-        }
 
-        while ((read[0] = getline(&feeds_line, &len[0], feeds_fid)) != -1) {
-                if (strlen(feeds_line) == 0 || feeds_line[0] == '#')
-                        continue;
-                trim_newline(feeds_line);
-                while ((read[1] = getline(&aliases_line, &len[1], aliases_fid)) != -1)
-                        if (strlen(aliases_line) != 0 && aliases_line[0] != '#')
-                                break;
-                trim_newline(aliases_line);
-                if (first) {
-                        printf("The following feeds are currently in the database:\n");
-                        first = 0;
+        while ((read = getline(&line, &len, fid)) != -1) {
+                split_feeds_line(line, alias, url);
+                if (alias[0] && url[0]) {
+                        if (first) {
+                                printf("The following feeds are currently in the database:\n");
+                                first = 0;
+                        }
+                        printf("%s - %s\n", alias, url);
                 }
-                printf("%s - %s\n", aliases_line, feeds_line);
         }
  
-        if (feeds_line)
-                free(feeds_line);
-        if (aliases_line)
-                free(aliases_line);
-        fclose(feeds_fid);
-        fclose(aliases_fid);
+        if (line)
+                free(line);
+        fclose(fid);
 
         if (first)
                 printf("There are no feeds in the database.\n");

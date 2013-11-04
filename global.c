@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
 
 #include "global.h"
 
@@ -18,76 +21,6 @@ int suffixcmp(const char *str, const char *suffix)
                 return -1;
         else
                 return strcmp(str + len - suflen, suffix);
-}
-
-int append_to_file(const char *filename, const char *text) {
-        FILE *fid;
-        fid = fopen(filename,"a");
-        if (fid == NULL) {
-                fprintf(stderr, "fatal: unable to open %s for writing.\n", filename);
-                return -1;
-        }
-        fprintf(fid, "%s\n", text);
-        fclose(fid);
-        return 0;
-}
-
-int check_in_file(const char *filename, const char *text) {
-        FILE *fid;
-        int lineno = 0;
-        char *line = NULL;
-        size_t len, text_len;
-        ssize_t read;
-        text_len = strlen(text);
-        fid = fopen(filename,"r");
-        if (fid == NULL) {
-                fprintf(stderr, "fatal: unable to open %s for reading.\n", filename);
-                return -1;
-        }
-        while ((read = getline(&line, &len, fid)) != -1) {
-                lineno++;
-                if (strlen(line) && line[0] == '#')
-                        continue;
-                trim_newline(line);
-                if (strcmp(line, text) == 0)
-                        break;
-        }
-        fclose(fid);
-        if (line)
-                free(line);
-        return (read == -1 ? 0 : lineno);
-}
-
-int check_feeds_integrity(void) {
-        FILE *fid;
-        char *line, path[PATH_MAX];
-        ssize_t read;
-        size_t len, lineno = 0;
-        sprintf(path, "%s/%s", RSS_DIR, FEEDS_FILE);
-        fid = fopen(path, "r");
-        if (fid == NULL) {
-                fprintf(stderr, "fatal: unable to open %s\n", FEEDS_FILE);
-                return -1;
-        }
-        while ((read = getline(&line, &len, fid)) != -1)
-                if (strlen(line) && line[0] != '#')
-                        lineno++;
-        fclose(fid);
-        sprintf(path, "%s/%s", RSS_DIR, FEEDS_ALIASES_FILE);
-        fid = fopen(path, "r");
-        if (fid == NULL) {
-                fprintf(stderr, "fatal: unable to open %s\n", FEEDS_ALIASES_FILE);
-                if (line)
-                        free(line);
-                return -1;
-        }
-        while ((read = getline(&line, &len, fid)) != -1)
-                if (strlen(line) && line[0] != '#')
-                        lineno--;
-        fclose(fid);
-        if (line)
-                free(line);
-        return lineno;
 }
 
 int url_to_alias(const char *url, char *alias) {
@@ -128,79 +61,204 @@ void trim_newline(char *str) {
                 str[pos+1] = '\0';
 }
 
-static int find_line(const char *filename, const char *text) {
-        FILE *fid;
-        char *line = NULL;
-        int lineno = 1;
-        ssize_t read;
-        size_t len, text_len = strlen(text);
-        fid = fopen(filename,"r");
-        if (fid == NULL)
-                return -1;
-        while ((read = getline(&line, &len, fid)) != -1) {
-                if (!strlen(line) || line[0] == '#')
-                        continue;
-                trim_newline(line);
-                if (strlen(line) == text_len && strcmp(line, text) == 0)
-                        break;
-                lineno++;
+void split_feeds_line(const char *line, char *alias, char *url) {
+        char *ptr;
+        const char *line_ptr = line;
+        alias[0] = url[0] = 0;
+        while (*line_ptr == ' ')
+                line_ptr++;
+        if (*line_ptr == '#')
+                return;         // comment
+        while (*line_ptr == '[')
+                line_ptr++;
+        ptr = alias;
+        while (*line_ptr != ']') {
+                *ptr = *line_ptr;
+                line_ptr++;
+                ptr++;
         }
-        if (line)
-                free(line);
-        fclose(fid);
-        return (read == -1 ? -1 : lineno);
+        *ptr = '\0';
+        while (*line_ptr == ']' || *line_ptr == ' ')
+                line_ptr++;
+        ptr = url;
+        while (*line_ptr && *line_ptr != '\n') {
+                *ptr = *line_ptr;
+                line_ptr++;
+                ptr++;
+        }
+        *ptr = '\0';
 }
 
-static int extract_line(const char *filename, int lineno, char *text) {
+int find_feed_alias(const char *url, char *alias) {
+        char path[PATH_MAX], url_l[URL_MAX], *line;
         FILE *fid;
-        char *line = NULL;
-        int curr = 1;
-        ssize_t read;
         size_t len;
-        fid = fopen(filename,"r");
+        sprintf(path, "%s/%s", RSS_DIR, FEEDS_FILE);
+        fid = fopen(path,"r");
         if (fid == NULL)
                 return -1;
-        while ((read = getline(&line, &len, fid)) != -1) {
-                if (!strlen(line) || line[0] == '#')
-                        continue;
-                trim_newline(line);
-                if (curr == lineno) {
-                        strcpy(text, line);
+        while ((line = fgetln(fid, &len)) != NULL) {
+                line[len-1] = '\0';
+                split_feeds_line(line, alias, url_l);
+                if (!strcmp(url, url_l))
                         break;
-                }
-                curr++;
         }
-        if (line)
-                free(line);
         fclose(fid);
-        return (read == -1 ? -1 : 0);
+        if (line == NULL) {
+                alias[0] = '\0';
+                return 0;
+        }
+        return 1;
 }
 
-int find_feed_url(const char *feed, char *url, char *alias) {
-        int lineno;
-        char path[PATH_MAX];
-        sprintf(path, "%s/%s", RSS_DIR, FEEDS_ALIASES_FILE);
-        lineno = find_line(path, feed);
+int find_feed_url(const char *alias, char *url) {
+        char path[PATH_MAX], alias_l[URL_MAX], *line;
+        FILE *fid;
+        size_t len;
         sprintf(path, "%s/%s", RSS_DIR, FEEDS_FILE);
-        if (lineno > 0) {
-                if (extract_line(path, lineno, url) != 0) {
-                        fprintf(stderr, "error: unable to extract line %d from file %s.\n", lineno, path);
-                        return -1;
-                }
-                strcpy(alias, feed);
-                return lineno;
+        fid = fopen(path,"r");
+        if (fid == NULL)
+                return -1;
+        while ((line = fgetln(fid, &len)) != NULL) {
+                line[len-1] = '\0';
+                split_feeds_line(line, alias_l, url);
+                if (!strcmp(alias, alias_l))
+                        break;
         }
-        lineno = find_line(path, feed);
-        if (lineno > 0) {
-                if (extract_line(path, lineno, alias) != 0) {
-                        fprintf(stderr, "error: unable to extract line %d from file %s.\n", lineno, path);
-                        return -1;
-                }
-                strcpy(url, feed);
-                return lineno;
+        fclose(fid);
+        if (line == NULL) {
+                url[0] = '\0';
+                return 0;
         }
-        fprintf(stderr, "error: unable to find feed %s\n", feed);
+        return 1;
+}
+
+int find_feed(const char *url, const char *alias) {
+        char path[PATH_MAX], alias_l[URL_MAX], url_l[URL_MAX], *line;
+        FILE *fid;
+        size_t len;
+        sprintf(path, "%s/%s", RSS_DIR, FEEDS_FILE);
+        fid = fopen(path,"r");
+        if (fid == NULL)
+                return -1;
+        while ((line = fgetln(fid, &len)) != NULL) {
+                line[len-1] = '\0';
+                split_feeds_line(line, alias_l, url_l);
+                if (!strcmp(alias, alias_l) && !strcmp(url, url_l))
+                        break;
+        }
+        fclose(fid);
+        if (line == NULL)
+                return 0;
+        return 1;
+}
+
+int rm_feed(const char *url, const char *alias) {
+        char path[PATH_MAX], alias_l[URL_MAX], url_l[URL_MAX], *line;
+        FILE *fid, *fid_cpy;
+        size_t len;
+        int err = 1;
+        sprintf(path, "%s/%s", RSS_DIR, FEEDS_FILE);
+        fid = fopen(path,"r");
+        if (fid == NULL)
+                return -1;
+        fid_cpy = fopen("/tmp/feeds","w");
+        if (fid_cpy == NULL) {
+                fclose(fid);
+                return -1;
+        }
+        while ((line = fgetln(fid, &len)) != NULL) {
+                line[len-1] = '\0';
+                split_feeds_line(line, alias_l, url_l);
+                if (!strcmp(alias, alias_l) && !strcmp(url, url_l)) {
+                        err = 0;
+                        continue;
+                }
+                fprintf(fid_cpy, "%s\n", line);
+        }
+        fclose(fid);
+        fclose(fid_cpy);
+        if (!err) {
+                remove(path);
+                cp(path, "/tmp/feeds");
+        }
+        remove("/tmp/feeds");
+        return err;
+}
+
+int add_feed(const char *url, const char *alias) {
+        FILE *fid;
+        char path[PATH_MAX];
+        if (! find_feed(url, alias)) {
+                sprintf(path, "%s/%s", RSS_DIR, FEEDS_FILE);
+                fid = fopen(path,"a");
+                if (fid == NULL)
+                        return -1;
+                fprintf(fid, "[%s] %s\n", alias, url);
+                fclose(fid);
+                return 0;
+        }
+        fprintf(stderr, "Feed already present in the database.\n");
         return -1;
+}
+
+int cp(const char *to, const char *from)
+{
+    int fd_to, fd_from;
+    char buf[4096];
+    ssize_t nread;
+    int saved_errno;
+
+    fd_from = open(from, O_RDONLY);
+    if (fd_from < 0)
+        return -1;
+
+    fd_to = open(to, O_WRONLY | O_CREAT | O_EXCL, 0666);
+    if (fd_to < 0)
+        goto out_error;
+
+    while (nread = read(fd_from, buf, sizeof buf), nread > 0)
+    {
+        char *out_ptr = buf;
+        ssize_t nwritten;
+
+        do {
+            nwritten = write(fd_to, out_ptr, nread);
+
+            if (nwritten >= 0)
+            {
+                nread -= nwritten;
+                out_ptr += nwritten;
+            }
+            else if (errno != EINTR)
+            {
+                goto out_error;
+            }
+        } while (nread > 0);
+    }
+
+    if (nread == 0)
+    {
+        if (close(fd_to) < 0)
+        {
+            fd_to = -1;
+            goto out_error;
+        }
+        close(fd_from);
+
+        /* Success! */
+        return 0;
+    }
+
+  out_error:
+    saved_errno = errno;
+
+    close(fd_from);
+    if (fd_to >= 0)
+        close(fd_to);
+
+    errno = saved_errno;
+    return -1;
 }
 
 #ifdef MY_GETLINE

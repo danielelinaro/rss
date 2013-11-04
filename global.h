@@ -34,11 +34,24 @@ struct cmd_struct {
 void trim_newline(char *str);
 int prefixcmp(const char *str, const char *prefix);
 int suffixcmp(const char *str, const char *suffix);
-int append_to_file(const char *filename, const char *text);
-int check_in_file(const char *filename, const char *text);
-int check_feeds_integrity(void);
-int find_feed_url(const char *feed, char *url, char *alias);
+
+/* splits a line of the feeds file in alias and URL */
+void split_feeds_line(const char *line, char *alias, char *url);
+/* generates an alias from a URL */
 int url_to_alias(const char *url, char *alias);
+/* finds a feed, given its URL */
+int find_feed_alias(const char *url, char *alias);
+/* finds a feed, given its alias */
+int find_feed_url(const char *alias, char *url);
+/* finds a feed, given both the URL and the alias */
+int find_feed(const char *url, const char *alias);
+/* removes a feed, given both the URL and the alias */
+int rm_feed(const char *url, const char *alias);
+/* adds a feed to the database */
+int add_feed(const char *url, const char *alias);
+
+/* copies a file from from to to */
+int cp(const char *to, const char *from);
 
 #endif
 

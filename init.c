@@ -56,8 +56,9 @@ int cmd_init(int argc, char **argv) {
                 fprintf(stderr, "fatal: unable to create feeds file.\n");
                 return -1;
         }
-        fprintf(fid, "# this file contains the addresses of the RSS feeds\n");
+        fprintf(fid, "# this file contains the aliases and the URLs of the RSS feeds\n");
         fclose(fid);
+        /*
         sprintf(path, "%s/%s", RSS_DIR, FEEDS_ALIASES_FILE);
         fid = fopen(path, "w");
         if (fid == NULL) {
@@ -66,6 +67,7 @@ int cmd_init(int argc, char **argv) {
         }
         fprintf(fid, "# this file contains the aliases of the RSS feeds\n");
         fclose(fid);
+        */
         return 0;
 }
 

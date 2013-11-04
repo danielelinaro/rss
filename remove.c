@@ -22,9 +22,9 @@ const char rss_remove_usage_string[] =
         "Remove a feed and associated data from the database.\n\n"
         "Usage: rss remove [<options>] feed\n"
         "where options are:\n"
-        "   -h, --help      print this help message and exit\n"
-        "   -f, --force     remove feed data without asking\n"
-        "   -c, --confirm   request confirmation before removing a non-empty directory\n";
+        "   -h, --help          print this help message and exit\n"
+        "   -f, --force         remove feed data without asking\n"
+        "   -i, --interactive   request confirmation before removing a non-empty directory\n";
 
 
 static void usage(void) {
@@ -34,18 +34,18 @@ static void usage(void) {
 static int parse_args(int argc, char **argv, int *options) {
         int ch;
         *options = 0;
-        while ((ch = getopt_long(argc, argv, "hfc", longopts, NULL)) != -1) {
+        while ((ch = getopt_long(argc, argv, "hfi", longopts, NULL)) != -1) {
                 switch (ch) {
                 case 'f':
                         if (*options & OPT_REMOVE_CONFIRM) {
-                                fprintf(stderr, "error: you can't specify both -f and -c.\n");
+                                fprintf(stderr, "error: you can't specify both -f and -i.\n");
                                 return -1;
                         }
                         *options = OPT_REMOVE_FORCE;
                         break;
-                case 'c':
+                case 'i':
                         if (*options & OPT_REMOVE_FORCE) {
-                                fprintf(stderr, "error: you can't specify both -f and -c.\n");
+                                fprintf(stderr, "error: you can't specify both -f and -i.\n");
                                 return -1;
                         }
                         *options = OPT_REMOVE_CONFIRM;
@@ -65,6 +65,7 @@ static int parse_args(int argc, char **argv, int *options) {
         return 0;
 }
 
+/*
 static int remove_line_from_file(const char *filename, int lineno) {
         FILE *fid, *tmp;
         ssize_t read;
@@ -100,6 +101,7 @@ static int remove_line_from_file(const char *filename, int lineno) {
                 free(line);
         return retval;
 }
+*/
 
 static int remove_dir_recursively(char *dirname) {
         FTS *ftsp;
@@ -138,54 +140,56 @@ static int remove_dir_recursively(char *dirname) {
 
 static int remove_feed(const char *feed, int options) {
         char url[URL_MAX], alias[PATH_MAX], path[PATH_MAX];
-        int lineno, err; 
+        int err; 
         char answer;
-        lineno = find_feed_url(feed, url, alias);
-        if (lineno > 0) {
-                if (options & OPT_REMOVE_CONFIRM) {
-                        printf("remove feed %s? (y/N) ", alias);
-                        scanf("%c", &answer);
-                        if (answer != 'y' && answer != 'Y') {
-                                printf("not removing feed %s.\n", alias);
-                                return 0;
-                        }
-                }
-                printf("removing feed %s.\n", alias);
-                sprintf(path, "%s/%s", RSS_DIR, alias);
 
-                // first remove the data
-                if (options & OPT_REMOVE_FORCE) {
-                        err = remove_dir_recursively(path);
-                        if (err) {
-                                fprintf(stderr, "error: unable to remove directory %s.\n", path);
+        if (find_feed_url(feed, url)) {
+                strcpy(alias, feed);
+        }
+        else if (find_feed_alias(feed, alias)) {
+                strcpy(url, feed);
+        }
+        else {
+                fprintf(stderr, "%s: no such feed.\n", feed);
+                return -1;
+        }
+
+        if (options & OPT_REMOVE_CONFIRM) {
+                printf("remove feed %s? (y/N) ", alias);
+                scanf("%c", &answer);
+                if (answer != 'y' && answer != 'Y') {
+                        printf("not removing feed %s.\n", alias);
+                        return 0;
+                }
+        }
+
+        printf("removing feed %s.\n", alias);
+        sprintf(path, "%s/%s", RSS_DIR, alias);
+
+        // first remove the data
+        if (options & OPT_REMOVE_FORCE) {
+                err = remove_dir_recursively(path);
+                if (err) {
+                        fprintf(stderr, "error: unable to remove directory %s.\n", path);
+                        return -1;
+                }
+        }
+        else {
+                err = rmdir(path);
+                if (err) {
+                        if (errno == ENOTEMPTY) {
+                                fprintf(stderr, "%s: directory not empty: use -f to force removal.\n", path);
+                                return -1;
+                        }
+                        else {
+                                fprintf(stderr, "%s: unable to remove.\n", path);
                                 return -1;
                         }
                 }
-                else {
-                        err = rmdir(path);
-                        if (err) {
-                                if (errno == ENOTEMPTY) {
-                                        fprintf(stderr, "%s: directory not empty: use -f to force removal.\n", path);
-                                        return -1;
-                                }
-                                else {
-                                        fprintf(stderr, "%s: unable to remove.\n", path);
-                                        return -1;
-                                }
-                        }
-                }
-
-                // then remove the entries in the database
-                sprintf(path, "%s/%s", RSS_DIR, FEEDS_FILE);
-                if (remove_line_from_file(path, lineno) != 0)
-                        return -1;
-                sprintf(path, "%s/%s", RSS_DIR, FEEDS_ALIASES_FILE);
-                if (remove_line_from_file(path, lineno) != 0)
-                        return -1;
-                sprintf(path, "%s/%s", RSS_DIR, alias);
-
-                printf("successfully removed feed %s\n", alias);
         }
+
+        rm_feed(url, alias);
+        printf("successfully removed feed %s\n", alias);
         return 0;
 }
 
