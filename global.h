@@ -5,12 +5,11 @@
 
 #define RSS_DIR             ".rss"
 #define FEEDS_FILE          "feeds"
-#define FEEDS_ALIASES_FILE  "feeds_aliases"
 #define NONE                0x0
 #define NEED_RSS_DIR        0x1
 #ifndef PATH_MAX
 #define PATH_MAX            4096
-#endif
+#endif // PATH_MAX
 #define URL_MAX             4096
 #define ALIAS_MAX           1024
 
@@ -23,7 +22,9 @@
 #include <unistd.h>  /* ssize_t */
 #define MY_GETLINE
 ssize_t getline(char **lineptr, size_t *n, FILE *stream);
-#endif
+#endif // getline
+
+#include "node.h"
 
 struct cmd_struct {
 	char *cmd;
@@ -53,5 +54,5 @@ int add_feed(const char *url, const char *alias);
 /* copies a file from from to to */
 int cp(const char *to, const char *from);
 
-#endif
+#endif // GLOBAL_H
 

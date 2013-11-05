@@ -189,7 +189,7 @@ static int remove_feed(const char *feed, int options) {
         }
 
         rm_feed(url, alias);
-        printf("successfully removed feed %s\n", alias);
+        printf("successfully removed feed %s.\n", alias);
         return 0;
 }
 

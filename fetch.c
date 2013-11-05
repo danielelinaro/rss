@@ -5,6 +5,7 @@
 #include "fetch.h"
 #include "global.h"
 #include "parse.h"
+#include "node.h"
 
 static struct option longopts[] = {
         {"help", no_argument, NULL, 'h'},
@@ -91,50 +92,26 @@ int fetch_url(const char *url, const char *filename) {
 }
 
 int cmd_fetch(int argc, char **argv) {
-        FILE *fid;
-        ssize_t read;
-        size_t len;
-        char url[URL_MAX], alias[PATH_MAX], path[PATH_MAX], *line;
+        char path[PATH_MAX];
         int err;
+        list l;
+        node n;
  
         parse_args(argc, argv);
 
         if (fetch_all) {
-                sprintf(path, "%s/%s", RSS_DIR, FEEDS_ALIASES_FILE);
-                fid = fopen(path,"r");
-                while ((read = getline(&line, &len, fid)) != -1) {
-                        split_feeds_line(line, alias, url);
-                        if (alias[0] && url[0]) {
-                                sprintf(path, "%s/%s/feed.xml", RSS_DIR, alias);
-                                printf("Fetching %s to %s.\n", url, path);
-                                err = fetch_url(url, path);
-                                if (err) {
-                                        fprintf(stderr, "Unable to fetch %s\n", alias);
-                                }
-                                else {
-                                        printf("Successfully fetched %s\n", alias);
-                                        err = parse_xml(path);
-                                        if (err)
-                                                fprintf(stderr, "Unable to parse %s\n", path);
-                                        else
-                                                printf("Successfully parsed %s\n", path);
-                                }
-
-                        }
-                }
-                if (line)
-                        free(line);
-                fclose(fid);
+                l = parse_feeds_file();
         }
         else {
-                if (find_feed_url(feed, url)) {
+                n = node_create(NULL,NULL);
+                if (find_feed_url(feed, node_url(n))) {
                         // the user passed the alias
-                        strcpy(alias, feed);
+                        strcpy(node_alias(n), feed);
                 }
                 else {
-                        if (find_feed_alias(feed, alias) > 0) {
+                        if (find_feed_alias(feed, node_alias(n)) > 0) {
                                 // the user passed the url
-                                strcpy(url, feed);
+                                strcpy(node_url(n), feed);
                         }
                         else {
                                 // can't find the feed
@@ -142,15 +119,20 @@ int cmd_fetch(int argc, char **argv) {
                                 return -1;
                         }
                 }
-                sprintf(path, "%s/%s/feed.xml", RSS_DIR, alias);
-                printf("Fetching %s to %s.\n", url, path);
-                err = fetch_url(url, path);
+                l = list_create();
+                list_push_back(l,n);
+        }
+
+        while ((n = list_pop_front(l)) != NULL) {
+                sprintf(path, "%s/%s/feed.xml", RSS_DIR, node_alias(n));
+                printf("Fetching %s to %s.\n", node_url(n), path);
+                err = fetch_url(node_url(n), path);
                 if (err) {
-                        fprintf(stderr, "Unable to fetch %s\n", alias);
+                        fprintf(stderr, "Unable to fetch %s\n", node_alias(n));
                         return -1;
                 }
                 else {
-                        printf("Successfully fetched %s\n", alias);
+                        printf("Successfully fetched %s\n", node_alias(n));
                         err = parse_xml(path);
                         if (err) {
                                 fprintf(stderr, "Unable to parse %s\n", path);
@@ -160,7 +142,9 @@ int cmd_fetch(int argc, char **argv) {
                                 printf("Successfully parsed %s\n", path);
                         }
                 }
+                node_destroy(n);
         }
+        list_destroy(l);
 
         return 0;
 }

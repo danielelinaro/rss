@@ -5,6 +5,7 @@
 #include <errno.h>
 
 #include "global.h"
+#include "node.h"
 
 int prefixcmp(const char *str, const char *prefix) {
         for (; ; str++, prefix++)

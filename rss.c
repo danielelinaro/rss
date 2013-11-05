@@ -10,6 +10,7 @@
 #include "init.h"
 #include "list.h"
 #include "remove.h"
+#include "node.h"
 
 struct cmd_struct rss_commands[] = {
         {"add", cmd_add, NEED_RSS_DIR},
@@ -46,12 +47,11 @@ static int handle_internal_command(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-
         int err;
         char *cmd;
         cmd = argv[0];
 
-        //test_global();
+        //test_list();
 
         if (!prefixcmp(cmd,"rss-")) {
                 cmd += 4;
