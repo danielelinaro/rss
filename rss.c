@@ -10,7 +10,7 @@
 #include "init.h"
 #include "list.h"
 #include "remove.h"
-#include "node.h"
+#include "show.h"
 
 struct cmd_struct rss_commands[] = {
         {"add", cmd_add, NEED_RSS_DIR},
@@ -19,6 +19,7 @@ struct cmd_struct rss_commands[] = {
         {"init", cmd_init, NONE},
         {"list", cmd_list, NEED_RSS_DIR},
         {"remove", cmd_remove, NEED_RSS_DIR},
+        {"show", cmd_show, NEED_RSS_DIR},
         {NULL, NULL, NONE}
 };
 
@@ -50,8 +51,6 @@ int main(int argc, char **argv) {
         int err;
         char *cmd;
         cmd = argv[0];
-
-        //test_list();
 
         if (!prefixcmp(cmd,"rss-")) {
                 cmd += 4;
