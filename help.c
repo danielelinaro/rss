@@ -13,6 +13,7 @@ const char rss_help_usage_string[] =
         "    init      initialise the database\n"
         "    list      list the feeds currently stored in the database\n"
         "    remove    remove a feed from the database\n"
+        "    show      show a feed present in the database\n"
         "\nSee 'rss help <command>' for more information on a specific command.\n";
 
 void usage(void) {

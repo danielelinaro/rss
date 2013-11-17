@@ -39,6 +39,11 @@ To list all the feeds in the database, type:
 rss list
 ```
 
+To show a specific feed, type:
+```
+rss show feed_alias
+```
+
 To remove a feed from the database, type:
 ```
 rss remove feed_alias

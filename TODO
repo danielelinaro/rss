@@ -1,1 +1,2 @@
--) write cmd_show
+-) make URL fetching multithreading.
+-) finish cmd_show
