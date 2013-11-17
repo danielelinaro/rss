@@ -20,7 +20,6 @@ const char rss_fetch_usage_string[] =
         "   -h, --help      print this help message and exit\n"
         "   -a, --all       fetch all feeds\n";
 
-
 char feed[URL_MAX];
 int fetch_all;
 
@@ -125,7 +124,6 @@ int cmd_fetch(int argc, char **argv) {
 
         while ((n = list_pop_front(l)) != NULL) {
                 sprintf(path, "%s/%s/feed.xml", RSS_DIR, node_alias(n));
-                printf("Fetching %s to %s.\n", node_url(n), path);
                 err = fetch_url(node_url(n), path);
                 if (err) {
                         fprintf(stderr, "Unable to fetch %s\n", node_alias(n));
@@ -133,7 +131,7 @@ int cmd_fetch(int argc, char **argv) {
                 }
                 else {
                         printf("Successfully fetched %s\n", node_alias(n));
-                        err = parse_xml(path);
+                        err = parse_xml(path, node_alias(n));
                         if (err) {
                                 fprintf(stderr, "Unable to parse %s\n", path);
                                 return -1;

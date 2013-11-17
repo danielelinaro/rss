@@ -79,7 +79,7 @@ int cmd_show(int argc, char **argv) {
                 fetch_url(url, filename);
 
         if (show_feed(filename) != 0) {
-                fprintf(stderr, "Unable to show the feed to the database.\n");
+                fprintf(stderr, "Unable to show the feed [%s].\n", alias);
                 return -1;
         }
 

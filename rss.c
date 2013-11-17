@@ -11,6 +11,7 @@
 #include "list.h"
 #include "remove.h"
 #include "show.h"
+#include "parse.h"
 
 struct cmd_struct rss_commands[] = {
         {"add", cmd_add, NEED_RSS_DIR},
@@ -51,6 +52,8 @@ int main(int argc, char **argv) {
         int err;
         char *cmd;
         cmd = argv[0];
+
+        //parse_xml("sample-rss-2.xml");
 
         if (!prefixcmp(cmd,"rss-")) {
                 cmd += 4;

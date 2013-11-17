@@ -7,6 +7,7 @@
 #include "add.h"
 #include "fetch.h"
 #include "global.h"
+#include "parse.h"
 
 char feed_url[URL_MAX];
 char feed_alias[URL_MAX];
@@ -25,7 +26,6 @@ const char rss_add_usage_string[] =
         "   -h, --help      print this help message and exit\n"
         "   -a, --alias     provide an alias for the address of the feed\n"
         "   -f, --fetch     fetch the data\n";
-
 
 static void usage(void) {
         printf("%s\n", rss_add_usage_string);
@@ -88,6 +88,7 @@ int cmd_add(int argc, char **argv) {
         if (options & RSS_ADD_FETCH) {
                 sprintf(path, "%s/%s/feed.xml", RSS_DIR, feed_alias);
                 fetch_url(feed_url, path);
+                parse_xml(path, feed_alias);
         }
 
         return 0;

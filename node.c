@@ -14,7 +14,7 @@ node node_create(const char *alias, const char *url) {
                 else
                         n->url[0] = '\0';
                 n->next = n->prev = NULL;
-                printf("node_create: (%s,%s)\n", alias, url);
+                //printf("node_create: (%s,%s)\n", alias, url);
         }
         else {
                 fprintf(stderr, "node_create: unable to allocate node.\n");
@@ -24,7 +24,7 @@ node node_create(const char *alias, const char *url) {
 
 void node_destroy(node n) {
         if (n) {
-                printf("node_destroy: (%s,%s)\n", node_alias(n), node_url(n));
+                //printf("node_destroy: (%s,%s)\n", node_alias(n), node_url(n));
                 free(n);
         }
         else {

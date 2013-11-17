@@ -1,74 +1,73 @@
 #include "parse.h"
+#include "global.h"
+#include "fetch.h"
 #include <stdio.h>
+#include <string.h>
+#include <time.h>
 #include <libxml/xmlreader.h>
+#include <sys/stat.h>
 
-/**
- * processNode:
- * @reader: the xmlReader
- *
- * Dump information about the current node
- */
-static void processNode(xmlTextReaderPtr reader) {
-    const xmlChar *name, *value;
-
-    name = xmlTextReaderConstName(reader);
-    if (name == NULL)
-	name = BAD_CAST "--";
-
-    value = xmlTextReaderConstValue(reader);
-
-    printf("%d %d %s %d %d", 
-	    xmlTextReaderDepth(reader),
-	    xmlTextReaderNodeType(reader),
-	    name,
-	    xmlTextReaderIsEmptyElement(reader),
-	    xmlTextReaderHasValue(reader));
-    if (value == NULL)
-	printf("\n");
-    else {
-        if (xmlStrlen(value) > 40)
-            printf(" %.40s...\n", value);
-        else
-	    printf(" %s\n", value);
-    }
+static void parse_item(xmlNode *item_node, const char *feed_name) {
+        xmlNode *cur_node = NULL, *date_node, *link_node;
+        struct tm pub_date;
+        char filename[15], path[PATH_MAX];
+        struct stat buf;
+        for (cur_node=item_node; cur_node; cur_node=cur_node->next) {
+                if (cur_node->type == XML_ELEMENT_NODE) {
+                        if (!xmlStrcmp(cur_node->name, (xmlChar*) "link")) {
+                                link_node = cur_node;
+                        }
+                        else if (!xmlStrcmp(cur_node->name, (xmlChar*) "pubDate")) {
+                                date_node = cur_node;
+                        }
+                }
+        }
+        strptime((char *) xmlNodeGetContent(date_node->children), "%a, %d %b %Y %H:%M:%S %z", &pub_date);
+        strftime(filename, 14, "%Y%m%d%H%M%S", &pub_date);
+        sprintf(path, "%s/%s/%s", RSS_DIR, feed_name, filename);
+        if (stat(path, &buf) == -1) {
+                fetch_url((char *) xmlNodeGetContent(link_node->children), path);
+        }
+        else {
+                printf("%s: file exists.\n", path);
+        }
 }
 
-/**
- * streamFile:
- * @filename: the file name to parse
- *
- * Parse and print information about an XML file.
- */
-static void streamFile(const char *filename) {
-    xmlTextReaderPtr reader;
-    int ret;
-
-    reader = xmlReaderForFile(filename, NULL, 0);
-    if (reader != NULL) {
-        ret = xmlTextReaderRead(reader);
-        while (ret == 1) {
-            processNode(reader);
-            ret = xmlTextReaderRead(reader);
+static void parse_node(xmlNode *a_node, const char *feed_name) {
+        xmlNode *cur_node = NULL;
+        for (cur_node=a_node; cur_node; cur_node=cur_node->next) {
+                if (cur_node->type == XML_ELEMENT_NODE) {
+                        if (!xmlStrcmp(cur_node->name, (xmlChar*) "item"))
+                                parse_item(cur_node->children, feed_name);
+                }
+                parse_node(cur_node->children, feed_name);
         }
-        xmlFreeTextReader(reader);
-        if (ret != 0) {
-            fprintf(stderr, "%s : failed to parse\n", filename);
-        }
-    } else {
-        fprintf(stderr, "Unable to open %s\n", filename);
-    }
 }
 
-int parse_xml(const char *filename) {
-        // this initialize the library and check potential ABI mismatches
-        // between the version it was compiled for and the actual shared
-        // library used.
+int parse_xml(const char *filename, const char *feed_name) {
+        xmlDoc *doc = NULL;
+        int err = 0;
+        
+        /*
+         * this initialize the library and check potential ABI mismatches
+         * between the version it was compiled for and the actual shared
+         * library used.
+         */
         LIBXML_TEST_VERSION
-        streamFile(filename);
-        // Cleanup function for the XML library.
+        
+        /* parse the file and get the DOM */
+        doc = xmlReadFile(filename, NULL, 0);
+        
+        if (doc != NULL) {
+                parse_node(xmlDocGetRootElement(doc), feed_name);
+                xmlFreeDoc(doc);
+        }
+        else {
+            printf("error: could not parse file %s\n", filename);
+            err = -1;
+        }
+        
         xmlCleanupParser();
-        // this is to debug memory for regression tests
-        xmlMemoryDump();
-        return 0;
+        return err;
 }
 
